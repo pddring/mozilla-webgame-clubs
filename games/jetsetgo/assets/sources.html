@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+	font-family:Verdana, Geneva, sans-serif;
+}
+.thumb {
+	width: 200px;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+	transition: all 1s ease;
+}
+
+.thumb:hover {
+	width: unset;
+	max-width: 100%;
+}
+
+.asset {
+	display: inline-block;
+	border-radius: 10px;
+	border: solid 1px #000;
+	text-align: center;
+	padding: 10px;
+}
+
+.asset:hover {
+	background-color: #FF0;
+}
+
+.detail {
+	display: block;
+}
+
+.name:before {
+	content: "Name: ";
+	font-weight: bold;
+}
+
+.license:before {
+	content: "License: ";
+	font-weight: bold;
+}
+
+.source:before {
+	content: "Source: ";
+	font-weight: bold;
+}
+</style>
+</head>
+<body>
+<h1>Assets sources</h1>
+<div class="asset">
+<span class="detail name">Space.jpeg</span>
+<span class="detail license">CC0</span>
+<span class="detail source"><a href="https://www.pexels.com/photo/astronomy-dark-evening-glowing-176851/">pexels.com</a></span>
+<img class="thumb" src="space.jpeg"></div>
+</body>
+</html>
