@@ -16,23 +16,229 @@
 // make game fill the whole browser width and height
 var width = document.body.offsetWidth; 
 var height = window.innerHeight;
-console.log(width, height);
+
 var game = new Phaser.Game(width, height, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+var numbers = [];
+var txtTarget;
+var txtDescription;
+var txtScore;
 var player;
+var style;
+var styleNumber;
+var target;
+var current = 0;
+var points = 10;
+var score = 0;
+
+var levels = [];
+var currentLevel = 0;
+var subLevel = 0;
+
+var sfx;
+var music;
+
+levels.push({
+	name:"Level One", 
+	desc: "Find your target number",
+	min:1, max:5, 
+	operators:{
+		"=": {min: 0, max: 5}
+	}, 
+	points:10, repeat:3
+	});
+	
+levels.push({
+	name:"Level Two", 
+	desc: "Add!",
+	min:1, max:10, 
+	operators:{
+		"=": {min: 0, max: 10}, 
+		"+": {min: 1, max: 10}
+	}, 
+	points:10, repeat:3
+	});
+	
+levels.push({
+	name:"Level Three", 
+	desc: "Subtract!",
+	min:1, max:10, 
+	operators:{
+		"=": {min: 1, max: 3}, 
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}
+	}, 
+	points:10, repeat:3
+	});
+
+levels.push({
+	name:"Level Four", 
+	desc: "Add or subtract (larger numbers)",
+	min:1, max:20, 
+	operators:{
+		"=": {min: 0, max: 5}, 
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}
+	}, 
+	points:10, repeat:3
+	});
+	
+levels.push({
+	name:"Level Five", 
+	desc: "Only add or subtract",
+	min:1, max:20, 
+	operators:{
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}
+	}, 
+	points:10, repeat:3
+	});
+	
+levels.push({
+	name:"Level Six", 
+	desc: "Multiply!",
+	min:1, max:50, 
+	operators:{
+		"=": {min: 0, max: 5}, 
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}, 
+		"x": {min: 2, max: 5}
+	}, 
+	points:10, repeat:1
+	});
+	
+levels.push({
+	name:"Level Seven", 
+	desc: "Divide!",
+	min:1, max:50, 
+	operators:{
+		"=": {min: 0, max: 5}, 
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}, 
+		"x": {min: 2, max: 5}, 
+		"÷": {min:2, max:5}
+		}, 
+	points:10, repeat:3
+	});
+	
+levels.push({
+	name:"Level Eight",
+	desc: "Up to 10 times tables", 
+	min:1, max:100, 
+	operators:{
+		"=": {min: 0, max: 5}, 
+		"+": {min: 1, max: 10}, 
+		"-": {min: 1, max: 10}, 
+		"x": {min: 2, max: 10}, 
+		"÷": {min:2, max:10}
+	}, 
+	points:10, repeat:1
+	});
+
+levels.push({
+	name:"Level Nine",
+	desc: "Up to 12 times tables", 
+	min:1, max:100, 
+	operators:{
+		"=": {min: 0, max: 5}, 
+		"+": {min: 1, max: 20}, 
+		"-": {min: 1, max: 20}, 
+		"x": {min: 2, max: 12}, 
+		"÷": {min:2, max:12}
+	}, 
+	points:10, repeat:1
+	});
+	
+levels.push({
+	name:"Level Ten", 
+	desc: "Last level!",
+	min:1, max:100, 
+	operators:{
+		"=": {min: 0, max: 1}, 
+		"+": {min: 1, max: 5}, 
+		"-": {min: 1, max: 5}, 
+		"x": {min: 6, max: 9}, 
+		"÷": {min:6, max:9}
+	}, 
+	points:10, repeat:1});
+
 // load all assets
 function preload() {
     game.load.image('space', 'assets/space.jpeg');
 	game.load.spritesheet('jetsetman', 'assets/jetsetman.png', 50, 100);
+	game.load.bitmapFont('sketch', 'assets/font.png', 'assets/font.fnt');
+	game.load.spritesheet('stars', 'assets/stars.png', 50, 50);
+	game.load.audio('sfx', 'assets/sounds.mp3');
+	game.load.audio('music', 'assets/music.mp3');
+}
+
+function randomBetween(min, max) {
+	return Math.floor(Math.random() * (max-min)) + min;
+}
+
+function addNumber(x) {
+	var level = levels[currentLevel];
+	if(x === undefined) {
+		x = width - 32;
+	}
+	var y = randomBetween(0, height - 32);
+	
+	var operators = Object.keys(level.operators);
+	var i = randomBetween(0, operators.length);
+	var operator = operators[i];
+	var value = randomBetween(level.operators[operator].min, level.operators[operator].max);
+	
+	var star = game.add.sprite(x, y, 'stars', i);
+	star.checkWorldBounds = true;
+	star.events.onOutOfBounds.add(removeNumber, this);
+	game.physics.arcade.enable(star);
+	star.body.velocity.setTo(-200,0);
+	var t = game.add.text(25, 30, operator + value, styleNumber)
+	t.anchor.setTo(0.5);
+	star.addChild(t);
+	
+	numbers.push(star);
+	return star;
 }
 
 // set up game at the start
 function create() {
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-	game.add.sprite(0, 0, 'space');
+	game.add.tileSprite(0, 0, width, height, 'space');
+	sfx = game.add.audio('sfx');
+	sfx.addMarker('blast', 0, 0.5, 0.2);
+	sfx.addMarker('ding', 0.7, 0.5);
+	sfx.addMarker('woohoo', 1.46, 0.57);
+	music = game.add.audio('music');
+	music.play('',0, 1, true);
 	
 	player = game.add.sprite(50, 50, 'jetsetman');
 	player.animations.add('float', [0, 1, 2, 3], 5, true);
 	player.animations.add('blast', [4, 5, 6, 7], 5, true);
+
+	style = { font: "bold 32px Arial", fill: "#fff", boundsAlignH: "right", boundsAlignV: "middle" };
+	styleNumber = { font: "bold 20px Arial", fill: "#fff", boundsAlignH: "center", boundsAlignV: "center", stroke:"#000", strokeThickness:3 };
+		
+	var level = levels[currentLevel];
+	txtTitle = game.add.bitmapText(width / 2, 64, 'sketch', level.name, 64);
+	txtTitle.anchor.setTo(0.5);
+	txtScore = game.add.text(width - 32, 64, "Score: " + score, style);
+	txtScore.anchor.setTo(1);
+	
+	var description = level.desc + " " + (subLevel + 1) + " / " + level.repeat;
+	txtDescription = game.add.text(width / 2, 120, description, style);
+	txtDescription.anchor.setTo(0.5);
+
+	target = randomBetween(level.min, level.max);
+	txtTarget = game.add.text(width - 32, height - 32, "Current: " + current + " Target: " + target, style);
+	
+	txtTarget.anchor.setTo(1.0);
+	
+	sndBlast = game.add.audio('blast');
+	
+	for (var x = 100; x < width; x+= 400) {
+		addNumber(x);
+	}
+	
 	game.physics.arcade.enable(player);
 	
 	player.body.bounce.y = 0.2;
@@ -40,6 +246,9 @@ function create() {
     player.body.collideWorldBounds = true;
 	
 	game.input.mouse.capture = true;
+	
+	
+	
 }
 
 function update() {
@@ -47,9 +256,76 @@ function update() {
 	if(game.input.activePointer.isDown) {
 		player.body.velocity.y -= 20;
 		player.animations.play('blast');
+		if(!sfx.isPlaying)
+			sfx.play("blast");
 	} else {
 		player.animations.play('float');		
 	}
+	
+	game.physics.arcade.overlap(player, numbers, collectNumber, null, this);
+}
+
+function removeNumber(number) {
+	var i = numbers.indexOf(number);
+	numbers.splice(i, 1);
+	number.kill();
+	addNumber();
+}
+
+function collectNumber(player, number) {
+	var i = numbers.indexOf(number);
+	numbers.splice(i, 1);
+	number.kill();
+	var text = number.getChildAt(0).text;
+	var operator = text[0];
+	var value = parseInt(text.substr(1));
+	switch(operator) {
+		case '=':
+			current = value;
+		break;
+		case '+':
+			current += value;
+			break;
+		case '-':
+			current -= value;
+			break;
+		case '÷':
+			current /= value;
+			break;
+		case 'x':
+			current *= value;
+			break;
+	}
+	current = Math.round(current);
+
+	if(current == target) {
+		sfx.play("woohoo");
+		var level = levels[currentLevel];
+		target = randomBetween(level.min, level.max);
+		current = 0;
+		subLevel++;
+		if(subLevel > level.repeat - 1) {
+			subLevel = 0;
+			currentLevel++;
+			if(currentLevel > levels.length - 1) {
+				txtTitle.text = "Game complete!";
+				currentLevel = 0;
+			} else {
+				level = levels[currentLevel];
+				points = level.points;
+				txtTitle.text = level.name;
+			}
+		}
+		txtDescription.text = level.desc + " " + (subLevel + 1) + " / " + level.repeat;
+		score += points;
+		txtScore.text = "Score: " + score;
+	} else {
+		sfx.play("ding");
+	}
+
+	txtTarget.text = "Current: " + current + " Target: " + target;
+
+	addNumber();	
 }
 
 </script>
